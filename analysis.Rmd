@@ -1,0 +1,110 @@
+---
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.width = 12, message = FALSE, warning = FALSE)
+library(dplyr)
+library(tibble)
+library(ggplot2)
+library(gridExtra)
+
+extract <- function (filename) {
+  timestamp <- strsplit(filename, '.csv')[[1]]
+  
+  raw <- read.csv(paste(data.directory, filename, sep = ''))
+  raw <- raw %>% mutate(date = as.Date(timestamp, '%m-%d-%Y'))
+  return(raw)
+}
+
+dat <- tibble()
+data.directory <- './csse_covid_19_data/csse_covid_19_daily_reports/'
+files <- list.files(data.directory)
+
+for (name in files) {
+  if (name != 'README.md') {
+    dat <- rbind(dat, extract(name))
+  }
+}
+
+dat[is.na(dat)] <- 0
+```
+
+Let's look at the total number of confirmed cases of coronavirus, as far back as we have data.
+
+
+```{r}
+dat %>%
+  group_by(date) %>%
+  summarise(Confirmed = sum(Confirmed)) %>%
+  ggplot() +
+  aes(x = date, y = Confirmed) +
+  geom_col() +
+  theme_minimal() +
+  labs(y = "Total Confirmed Cases", x = "Date", title = "Worldwide Total Confirmed Cases")
+```
+
+Ok that's a lot of cases, what about total number of deaths?
+
+```{r}
+dat %>%
+  group_by(date) %>%
+  summarise(Deaths = sum(Deaths)) %>%
+  ggplot() +
+  aes(x = date, y = Deaths) +
+  geom_col() +
+  theme_minimal() +
+  labs(y = "Total Confirmed Cases", x = "Date", title = "Worldwide Total Deaths")
+```
+
+Yikes that's pretty bad. Well both of those curves begin to flatten a little near the end, does that mean that the virus is slowing down?
+
+```{r}
+newly.confirmed.cases <- dat %>%
+  group_by(date) %>%
+  summarise(Confirmed = sum(Confirmed)) %>%
+  mutate(Confirmed = Confirmed - lag(Confirmed)) %>%
+  ggplot() +
+  aes(x = date, y = Confirmed) +
+  geom_col() +
+  theme_minimal() +
+  labs(y = "Newly Confirmed Cases", x = "Date", title = "Worldwide Newly Confirmed Cases")
+
+new.deaths <- dat %>%
+  group_by(date) %>%
+  summarise(Deaths = sum(Deaths)) %>%
+  mutate(Deaths = Deaths - lag(Deaths)) %>%
+  ggplot() +
+  aes(x = date, y = Deaths) +
+  geom_col() +
+  theme_minimal() +
+  labs(y = "Newly Confirmed Cases", x = "Date", title = "Worldwide Deaths Per Day")
+
+grid.arrange(newly.confirmed.cases, new.deaths, ncol = 2)
+```
+
+Alright that's bad it at least it's slowing down right? Let's confirm by highlighting cases around the world relative to China.
+
+```{r}
+dat %>%
+  mutate(china = ifelse(Country.Region == 'Mainland China', 'China', 'Not China')) %>%
+  ggplot() +
+  aes(x = date, y = Confirmed, fill = china) +
+  geom_col() +
+  theme_minimal() +
+  labs(y = "Total Confirmed Cases", x = "Date", title = "Worldwide Total Confirmed Cases, outside of China")
+```
+
+Ok that's just barely a sliver right 😅, let's zoom in on the blue bit to ensure that we're doing all right outside China.
+
+```{r}
+dat %>%
+  filter(Country.Region != 'Mainland China') %>%
+  ggplot() +
+  aes(x = date, y = Confirmed) +
+  geom_col() +
+  theme_minimal() +
+  labs(y = "Total Confirmed Cases", x = "Date", title = "Worldwide Total Confirmed Cases, outside of China")
+```
+
+U.... u oh
