@@ -11,7 +11,7 @@ library(gridExtra)
 
 extract <- function (filename) {
   timestamp <- strsplit(filename, '.csv')[[1]]
-  
+
   raw <- read.csv(paste(data.directory, filename, sep = ''))
   raw <- raw %>% mutate(date = as.Date(timestamp, '%m-%d-%Y'))
   return(raw)
@@ -107,4 +107,4 @@ dat %>%
   labs(y = "Total Confirmed Cases", x = "Date", title = "Worldwide Total Confirmed Cases, outside of China")
 ```
 
-U.... u oh
+.... uh oh
