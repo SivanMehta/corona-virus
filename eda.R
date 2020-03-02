@@ -1,12 +1,16 @@
 library(dplyr)
 library(tibble)
 library(ggplot2)
+library(gridExtra)
 
 extract <- function (filename) {
   timestamp <- strsplit(filename, '.csv')[[1]]
-
+  
   raw <- read.csv(paste(data.directory, filename, sep = ''))
-  raw <- raw %>% mutate(date = as.Date(timestamp, '%m-%d-%Y'))
+  raw <- raw %>%
+    mutate(date = as.Date(timestamp, '%m-%d-%Y')) %>%
+    select(-matches('itude'))
+  
   return(raw)
 }
 
@@ -21,8 +25,6 @@ for (name in files) {
 }
 
 dat[is.na(dat)] <- 0
-
-# Confirmed Cases
 
 total.confirmed.cases <- dat %>%
   group_by(date) %>%
@@ -70,13 +72,13 @@ ggsave('new-and-total-cases.png', arranged, width = 8, height = 5)
 
 # BuT iTs AlL iN ChInA
 
-dat %>%
+highlight.china <- dat %>%
   mutate(china = ifelse(Country.Region == 'Mainland China', 'China', 'Not China')) %>%
   ggplot() +
   aes(x = date, y = Confirmed, fill = china) +
   geom_col() +
   theme_minimal() +
-  labs(y = "Total Confirmed Cases", x = "Date", title = "Worldwide Total Confirmed Cases, outside of China")
+  labs(y = "Total Confirmed Cases", x = "Date", title = "Worldwide Total Confirmed Cases, highlighting China")
 
 outside.china <- dat %>%
   filter(Country.Region != 'Mainland China') %>%
@@ -85,3 +87,6 @@ outside.china <- dat %>%
   geom_col() +
   theme_minimal() +
   labs(y = "Total Confirmed Cases", x = "Date", title = "Worldwide Total Confirmed Cases, outside of China")
+
+arranged <- gridExtra::grid.arrange(highlight.china, outside.china, nrow = 2)
+ggsave('what-about-china.png', arranged, width = 6, height = 7)
