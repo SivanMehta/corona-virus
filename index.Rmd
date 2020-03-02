@@ -110,4 +110,4 @@ dat %>%
   labs(y = "Total Confirmed Cases", x = "Date", title = "Worldwide Total Confirmed Cases, outside of China")
 ```
 
-.... uh oh
+....... oh no.
